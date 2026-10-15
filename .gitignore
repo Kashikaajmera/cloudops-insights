@@ -1,0 +1,17 @@
+@'
+node_modules/
+.next/
+dist/
+build/
+.env
+.env.*
+!.env.example
+coverage/
+bin/
+*.exe
+*.test
+__pycache__/
+.venv/
+.vscode/
+.DS_Store
+'@ | Set-Content -Encoding utf8 .gitignore
