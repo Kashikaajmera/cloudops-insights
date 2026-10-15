@@ -1,0 +1,59 @@
+
+openapi: 3.0.3
+
+info:
+  title: CloudOps Insights Spend Service
+  version: 1.0.0
+  description: API for cloud spending and cost analytics
+
+paths:
+  /api/v1/spend/summary:
+    get:
+      operationId: getSpendSummary
+      summary: Get cloud spending summary
+      tags:
+        - Spend
+      responses:
+        "200":
+          description: Spending summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendSummary"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    SpendSummary:
+      type: object
+      required:
+        - currency
+        - totalCost
+        - resourceCount
+      properties:
+        currency:
+          type: string
+          example: USD
+        totalCost:
+          type: string
+          description: Decimal amount represented as a string
+          example: "450.75"
+        resourceCount:
+          type: integer
+          example: 3
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
