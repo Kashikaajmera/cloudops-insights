@@ -1,29 +1,42 @@
-
 package service
 
 import (
-    "fmt"
+	"context"
+	"fmt"
 
-    "github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/generated"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/generated"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/repository"
 )
 
-type SpendService struct{}
-
-func NewSpendService() *SpendService {
-    return &SpendService{}
+type SpendService struct {
+	repo repository.SpendRepository
 }
 
-func (s *SpendService) GetSummary() generated.SpendSummary {
-    costsInCents := []int64{15025, 10050, 20000}
+func NewSpendService(repo repository.SpendRepository) *SpendService {
+	return &SpendService{repo: repo}
+}
 
-    var total int64
-    for _, cost := range costsInCents {
-        total += cost
-    }
+func (s *SpendService) GetSummary(
+	ctx context.Context,
+	organizationID int64,
+) (generated.SpendSummary, error) {
 
-    return generated.SpendSummary{
-        Currency:      "USD",
-        TotalCost:     fmt.Sprintf("%d.%02d", total/100, total%100),
-        ResourceCount: len(costsInCents),
-    }
+	const currency = "USD"
+
+	result, err := s.repo.GetSummary(ctx, organizationID, currency)
+	if err != nil {
+		return generated.SpendSummary{}, fmt.Errorf(
+			"get spend summary: %w", err,
+		)
+	}
+
+	return generated.SpendSummary{
+		Currency: result.Currency,
+		TotalCost: fmt.Sprintf(
+			"%d.%02d",
+			result.TotalCostCents/100,
+			result.TotalCostCents%100,
+		),
+		ResourceCount: result.ResourceCount,
+	}, nil
 }

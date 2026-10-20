@@ -1,23 +1,37 @@
-
 package handler
 
 import (
-    "net/http"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 
-    "github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/service"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/service"
 )
 
 type SpendHandler struct {
-    service *service.SpendService
+	service *service.SpendService
 }
 
 func NewSpendHandler(s *service.SpendService) *SpendHandler {
-    return &SpendHandler{service: s}
+	return &SpendHandler{service: s}
 }
 
 func (h *SpendHandler) GetSpendSummary(c *gin.Context) {
-    summary := h.service.GetSummary()
-    c.JSON(http.StatusOK, summary)
+	// Temporary, server-controlled development tenant.
+	// Replace with verified tenant context after authentication.
+	const organizationID int64 = 1
+
+	summary, err := h.service.GetSummary(
+		c.Request.Context(),
+		organizationID,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to retrieve spend summary",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
 }

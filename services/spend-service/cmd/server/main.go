@@ -1,36 +1,47 @@
-
 package main
 
 import (
-    "log"
-    "net/http"
+	"context"
+	"log"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 
-    "github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/generated"
-    "github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/handler"
-    "github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/service"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/config"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/generated"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/handler"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/repository"
+	"github.com/kashika-ajmera/cloudops-insights/services/spend-service/internal/service"
 )
 
 func main() {
-    router := gin.New()
-    router.Use(gin.Logger(), gin.Recovery())
+	ctx := context.Background()
 
-    spendService := service.NewSpendService()
-    spendHandler := handler.NewSpendHandler(spendService)
+	dbPool, err := config.NewDatabasePool(ctx)
+	if err != nil {
+		log.Fatalf("database initialization failed: %v", err)
+	}
+	defer dbPool.Close()
 
-    router.GET("/health", func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{
-            "status":  "ok",
-            "service": "spend-service",
-        })
-    })
+	spendRepository := repository.NewPostgresRepository(dbPool)
+	spendService := service.NewSpendService(spendRepository)
+	spendHandler := handler.NewSpendHandler(spendService)
 
-    generated.RegisterHandlers(router, spendHandler)
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery())
 
-    log.Println("Spend Service starting on port 8081")
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"service": "spend-service",
+		})
+	})
 
-    if err := router.Run(":8081"); err != nil {
-        log.Fatal(err)
-    }
+	generated.RegisterHandlers(router, spendHandler)
+
+	log.Println("Spend Service starting on port 8081")
+
+	if err := router.Run(":8081"); err != nil {
+		log.Fatal(err)
+	}
 }
